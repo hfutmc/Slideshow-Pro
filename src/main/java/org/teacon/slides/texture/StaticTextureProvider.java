@@ -3,22 +3,34 @@ package org.teacon.slides.texture;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 //#if MC >= 12105
+//#if MC >= 26_03_00
+//$$ import com.mojang.renderpearl.api.GpuFormat;
+//$$ import com.mojang.renderpearl.api.commands.CommandEncoder;
+//$$ import com.mojang.renderpearl.api.textures.AddressMode;
+//$$ import com.mojang.renderpearl.api.textures.FilterMode;
+//$$ import com.mojang.renderpearl.api.textures.GpuTexture;
+//#else
 //$$ import com.mojang.blaze3d.systems.CommandEncoder;
 //$$ import com.mojang.blaze3d.textures.AddressMode;
 //$$ import com.mojang.blaze3d.textures.FilterMode;
 //$$ import com.mojang.blaze3d.textures.GpuTexture;
-//#if MC >= 26_00_00
-//$$ import com.mojang.blaze3d.platform.Transparency;
-//#endif
 //#if MC >= 26_02_00
 //$$ import com.mojang.blaze3d.GpuFormat;
 //#else
 //$$ import com.mojang.blaze3d.textures.TextureFormat;
 //#endif
+//#endif
+//#if MC >= 26_00_00
+//$$ import com.mojang.blaze3d.platform.Transparency;
+//#endif
 //$$ import net.minecraft.client.renderer.texture.MipmapGenerator;
 //#endif
 //#if MC >= 12111
+//#if MC >= 26_03_00
+//$$ import com.mojang.renderpearl.api.textures.GpuSampler;
+//#else
 //$$ import com.mojang.blaze3d.textures.GpuSampler;
+//#endif
 //$$ import net.minecraft.client.renderer.texture.MipmapStrategy;
 //$$ import net.minecraft.resources.Identifier;
 //$$ import org.teacon.slides.Slideshow;
@@ -189,9 +201,13 @@ public final class StaticTextureProvider implements TextureProvider {
 	}
 
 	public static NativeImage createNativeImage(@Nullable NativeImage.Format format, ByteBuffer buffer) throws IOException {
+//#if MC >= 26_03_00
+//$$ 		if (MemoryUtil.memAddress(buffer) == 0L) {
+//#else
 		if (format != null && !format.supportedByStb()) {
 			throw new UnsupportedOperationException("Don't know how to read format " + format);
 		} else if (MemoryUtil.memAddress(buffer) == 0L) {
+//#endif
 			throw new IllegalArgumentException("Invalid buffer");
 		} else {
 			try (MemoryStack memoryStack = MemoryStack.stackPush()) {
@@ -202,10 +218,25 @@ public final class StaticTextureProvider implements TextureProvider {
 				if (byteBuffer == null) {
 					throw new IOException("Could not load image: " + STBImage.stbi_failure_reason());
 				} else {
+//#if MC >= 26_03_00
+//$$ 					return new NativeImage(format == null ? stbFormat(intBuffer3.get(0)) : format, intBuffer.get(0), intBuffer2.get(0), true, MemoryUtil.memAddress(byteBuffer));
+//#else
 					return new NativeImage(format == null ? NativeImage.Format.getStbFormat(intBuffer3.get(0)) : format, intBuffer.get(0), intBuffer2.get(0), true, MemoryUtil.memAddress(byteBuffer));
+//#endif
 				}
 			}
 		}
 	}
+
+//#if MC >= 26_03_00
+//$$ 	private static NativeImage.Format stbFormat(int channels) {
+//$$ 		return switch (channels) {
+//$$ 			case 1 -> NativeImage.Format.LUMINANCE;
+//$$ 			case 2 -> NativeImage.Format.LUMINANCE_ALPHA;
+//$$ 			case 3 -> NativeImage.Format.RGB;
+//$$ 			default -> NativeImage.Format.RGBA;
+//$$ 		};
+//$$ 	}
+//#endif
 
 }

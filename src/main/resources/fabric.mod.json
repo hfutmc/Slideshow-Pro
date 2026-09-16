@@ -9,10 +9,11 @@
 		"ustc_zzzz",
 		"BloCamLimb",
 		"Jonathan Ho",
-		"Whyvo"
+		"Whyvo",
+		"Whisperlyric"
 	],
 	"contact": {
-		"sources": "https://github.com/whyvo1/Slideshow-Pro"
+		"sources": "https://github.com/hfutmc/Slideshow-Pro"
 	},
 	"license": "BSD 3-Clause",
 	"icon": "assets/icon.png",

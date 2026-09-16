@@ -3,6 +3,12 @@ package org.teacon.slides.texture;
 import com.mojang.blaze3d.systems.RenderSystem;
 //#if MC >= 12105
 //$$ import com.mojang.blaze3d.platform.NativeImage;
+//#if MC >= 26_03_00
+//$$ import com.mojang.renderpearl.api.GpuFormat;
+//$$ import com.mojang.renderpearl.api.textures.AddressMode;
+//$$ import com.mojang.renderpearl.api.textures.FilterMode;
+//$$ import com.mojang.renderpearl.api.textures.GpuTexture;
+//#else
 //$$ import com.mojang.blaze3d.textures.AddressMode;
 //$$ import com.mojang.blaze3d.textures.FilterMode;
 //$$ import com.mojang.blaze3d.textures.GpuTexture;
@@ -12,8 +18,13 @@ import com.mojang.blaze3d.systems.RenderSystem;
 //$$ import com.mojang.blaze3d.textures.TextureFormat;
 //#endif
 //#endif
+//#endif
 //#if MC >= 12111
+//#if MC >= 26_03_00
+//$$ import com.mojang.renderpearl.api.textures.GpuSampler;
+//#else
 //$$ import com.mojang.blaze3d.textures.GpuSampler;
+//#endif
 //#endif
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL;

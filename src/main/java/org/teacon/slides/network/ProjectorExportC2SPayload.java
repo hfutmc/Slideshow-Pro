@@ -52,7 +52,11 @@ public class ProjectorExportC2SPayload implements CustomPacketPayload {
          boolean bl = serverPlayer.getInventory().add(itemStack);
          if (bl && itemStack.isEmpty()) {
             itemStack.setCount(1);
+//#if MC >= 26_03_00
+//$$             ItemEntity itemEntity = serverPlayer.drop(itemStack, false, net.minecraft.util.Prediction.SERVER_ONLY);
+//#else
             ItemEntity itemEntity = serverPlayer.drop(itemStack, false);
+//#endif
             if (itemEntity != null) {
                itemEntity.makeFakeItem();
             }
@@ -70,7 +74,11 @@ public class ProjectorExportC2SPayload implements CustomPacketPayload {
                );
             serverPlayer.inventoryMenu.broadcastChanges();
          } else {
+//#if MC >= 26_03_00
+//$$             ItemEntity itemEntity = serverPlayer.drop(itemStack, false, net.minecraft.util.Prediction.SERVER_ONLY);
+//#else
             ItemEntity itemEntity = serverPlayer.drop(itemStack, false);
+//#endif
             if (itemEntity != null) {
                itemEntity.setNoPickUpDelay();
                itemEntity.setTarget(serverPlayer.getUUID());

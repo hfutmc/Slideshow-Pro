@@ -168,9 +168,11 @@ public final class ProjectorBlock extends BaseEntityBlock implements EntityBlock
 //#endif
    }
 
+//#if MC < 26_03_00
    protected MapCodec<? extends BaseEntityBlock> codec() {
       return simpleCodec(ProjectorBlock::new);
    }
+//#endif
 
    public RenderShape getRenderShape(BlockState state) {
       return RenderShape.MODEL;

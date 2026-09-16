@@ -2,10 +2,19 @@ package org.teacon.slides.renderer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+//#if MC < 26_03_00
 import com.mojang.blaze3d.vertex.VertexFormat;
+//#else
+//$$ import com.mojang.renderpearl.api.vertex.VertexFormat;
+//#endif
 //#if MC >= 12111
+//#if MC >= 26_03_00
+//$$ import com.mojang.renderpearl.api.textures.GpuSampler;
+//$$ import com.mojang.renderpearl.api.textures.GpuTexture;
+//#else
 //$$ import com.mojang.blaze3d.textures.GpuSampler;
 //$$ import com.mojang.blaze3d.textures.GpuTexture;
+//#endif
 //$$ import net.minecraft.client.Minecraft;
 //$$ import net.minecraft.client.renderer.RenderPipelines;
 //$$ import net.minecraft.client.renderer.rendertype.RenderSetup;
