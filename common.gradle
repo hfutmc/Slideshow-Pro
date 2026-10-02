@@ -35,6 +35,7 @@ dependencies {
 
     // Third-party libraries (pure Java, no remapping needed)
     implementation 'dev.matrixlab.webp4j:webp4j-core:2.1.0'
+    include 'dev.matrixlab.webp4j:webp4j-core:2.1.0'
     implementation 'net.spy:spymemcached:2.12.0'
     implementation 'net.sf.ehcache:ehcache:2.10.6'
     // Apache HttpClient used by the bundled HTTP cache implementation (bundled by Minecraft itself before 1.21.11)
