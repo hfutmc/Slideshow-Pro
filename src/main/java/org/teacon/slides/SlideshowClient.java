@@ -12,7 +12,9 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.RenderType;
 //#if MC >= 12108
+//#if MC < 26_00_00
 //$$ import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+//#endif
 //#endif
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
@@ -32,7 +34,11 @@ public class SlideshowClient implements ClientModInitializer {
    public void onInitializeClient() {
       RegistryClient.registerBlockEntityRenderer(Slideshow.PROJECTOR_BLOCK_ENTITY, ctx -> new ProjectorRenderer());
 //#if MC >= 12108
+//#if MC < 26_00_00
       //$$ RegistryClient.registerBlockRenderType(Slideshow.PROJECTOR_BLOCK, ChunkSectionLayer.CUTOUT);
+//#else
+      //$$ // 26.x takes the chunk render layer from the block model's "render_type", so no registration is needed there
+//#endif
 //#else
       RegistryClient.registerBlockRenderType(Slideshow.PROJECTOR_BLOCK, RenderType.cutout());
 //#endif
