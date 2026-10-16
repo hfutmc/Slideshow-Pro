@@ -4,15 +4,12 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-//#if MC >= 12111
-//$$ import net.minecraft.server.permissions.Permission.HasCommandLevel;
-//$$ import net.minecraft.server.permissions.PermissionLevel;
-//#endif
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import org.teacon.slides.config.ServerConfig;
 import org.teacon.slides.projector.ProjectorBlockEntity;
+import org.teacon.slides.util.PermissionCompat;
 
 public class ProjectorCommand {
    protected static final Component NO_PROJECTOR = Component.translatable("chat.slide_show.no_projector");
@@ -23,11 +20,7 @@ public class ProjectorCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register(
          (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("projector")
-//#if MC >= 12111
-                     //$$ .requires(source -> source.permissions().hasPermission(new HasCommandLevel(PermissionLevel.byId(ServerConfig.getCommandsPermission())))))
-//#else
-                     .requires(source -> source.hasPermission(ServerConfig.getCommandsPermission())))
-//#endif
+                     .requires(source -> PermissionCompat.check(source, PermissionCompat.COMMAND_PROJECTOR, ServerConfig.getCommandsPermission())))
                   .then(
                      Commands.literal("next")
                         .then(

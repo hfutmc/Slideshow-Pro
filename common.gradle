@@ -9,6 +9,11 @@ final boolean velocityBuild = (project.findProperty('velocity') ?: 'false').toSt
 final String buildVariant = velocityBuild ? 'velocity' : 'fabric'
 final String buildVersion = velocityBuild ? "${project.mod_version}-velocity" : project.mod_version
 
+// Versions whose permission checks go through the Fabric permission API have to require it at
+// runtime as well, otherwise the classes are missing. The pinned Fabric API version serves as the
+// minimum; older versions keep the unconstrained dependency they had before.
+final String fabricApiRange = mcVersion >= 26_01_02 ? ">=${project.fabric_version.split('\\+')[0]}" : '*'
+
 apply plugin: 'maven-publish'
 apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 apply plugin: 'com.replaymod.preprocess'
@@ -119,12 +124,14 @@ processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     inputs.property "version", buildVersion
     inputs.property "minecraft_range", project.minecraft_range
+    inputs.property "fabric_api_range", fabricApiRange
     inputs.property "java_version", JAVA_COMPATIBILITY.toString()
     inputs.property "loader_version", project.loader_version
 
     filesMatching("fabric.mod.json") {
         expand "version": buildVersion,
                "minecraft_range": project.minecraft_range,
+               "fabric_api_range": fabricApiRange,
                "java_version": JAVA_COMPATIBILITY.toString(),
                "loader_version": project.loader_version
     }

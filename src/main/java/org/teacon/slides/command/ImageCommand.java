@@ -4,26 +4,19 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-//#if MC >= 12111
-//$$ import net.minecraft.server.permissions.Permission.HasCommandLevel;
-//$$ import net.minecraft.server.permissions.PermissionLevel;
-//#endif
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.teacon.slides.config.ServerConfig;
 import org.teacon.slides.network.ProjectorExportC2SPayload;
+import org.teacon.slides.util.PermissionCompat;
 
 public class ImageCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register(
          (LiteralArgumentBuilder)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("image")
-//#if MC >= 12111
-                  //$$ .requires(source -> source.permissions().hasPermission(new HasCommandLevel(PermissionLevel.byId(ServerConfig.getCommandsPermission()))) && source.getEntity() instanceof Player))
-//#else
-                  .requires(source -> source.hasPermission(ServerConfig.getCommandsPermission()) && source.getEntity() instanceof Player))
-//#endif
+                  .requires(source -> PermissionCompat.check(source, PermissionCompat.COMMAND_IMAGE, ServerConfig.getCommandsPermission()) && source.getEntity() instanceof Player))
                .then(
                   Commands.literal("id")
                      .then(

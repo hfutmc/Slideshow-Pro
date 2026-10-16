@@ -6,10 +6,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-//#if MC >= 12111
-//$$ import net.minecraft.server.permissions.Permission.HasCommandLevel;
-//$$ import net.minecraft.server.permissions.PermissionLevel;
-//#endif
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -19,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import org.teacon.slides.config.ServerConfig;
 import org.teacon.slides.projector.ProjectorBlockEntity;
 import org.teacon.slides.projector.SourceType;
+import org.teacon.slides.util.PermissionCompat;
 
 public class ImageinfoCommand {
    private static final Component IMAGE_INFO_CHANGED = Component.translatable("chat.slide_show.image_info_changed");
@@ -26,11 +23,7 @@ public class ImageinfoCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register(
          (LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("imageinfo")
-//#if MC >= 12111
-               //$$ .requires(source -> source.permissions().hasPermission(new HasCommandLevel(PermissionLevel.byId(ServerConfig.getCommandsPermission())))))
-//#else
-               .requires(source -> source.hasPermission(ServerConfig.getCommandsPermission())))
-//#endif
+               .requires(source -> PermissionCompat.check(source, PermissionCompat.COMMAND_IMAGEINFO, ServerConfig.getCommandsPermission())))
             .then(
                ((RequiredArgumentBuilder)((RequiredArgumentBuilder)((RequiredArgumentBuilder)Commands.argument("pos", BlockPosArgument.blockPos())
                            .then(

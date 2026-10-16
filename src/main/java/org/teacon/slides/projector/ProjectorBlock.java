@@ -7,10 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Plane;
 import net.minecraft.server.level.ServerPlayer;
-//#if MC >= 12111
-//$$ import net.minecraft.server.permissions.Permission.HasCommandLevel;
-//$$ import net.minecraft.server.permissions.PermissionLevel;
-//#endif
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
@@ -46,6 +42,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.teacon.slides.Slideshow;
 import org.teacon.slides.config.ServerConfig;
+import org.teacon.slides.util.PermissionCompat;
 
 public final class ProjectorBlock extends BaseEntityBlock implements EntityBlock {
    public static final EnumProperty<ProjectorBlock.InternalRotation> ROTATION = EnumProperty.create("rotation", ProjectorBlock.InternalRotation.class);
@@ -161,11 +158,7 @@ public final class ProjectorBlock extends BaseEntityBlock implements EntityBlock
 
    public static boolean hasProjectorPermission(ServerPlayer serverPlayer) {
       return (!ServerConfig.isProjectorRequiresCreative() || serverPlayer.isCreative())
-//#if MC >= 12111
-         //$$ && serverPlayer.permissions().hasPermission(new HasCommandLevel(PermissionLevel.byId(ServerConfig.getProjectorPermission())));
-//#else
-         && serverPlayer.hasPermissions(ServerConfig.getProjectorPermission());
-//#endif
+         && PermissionCompat.check(serverPlayer, PermissionCompat.PROJECTOR_USE, ServerConfig.getProjectorPermission());
    }
 
 //#if MC < 26_03_00
