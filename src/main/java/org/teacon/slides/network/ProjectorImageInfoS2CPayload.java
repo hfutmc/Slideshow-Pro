@@ -1,10 +1,9 @@
 package org.teacon.slides.network;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.Context;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.teacon.slides.Slideshow;
 import org.teacon.slides.projector.ProjectorBlockEntity;
@@ -42,19 +41,19 @@ public class ProjectorImageInfoS2CPayload implements CustomPacketPayload {
       buffer.writeUtf(payload.str1);
    }
 
-   public static void handle(ProjectorImageInfoS2CPayload payload, Context context) {
-      Minecraft client = context.client();
-      if (client.level != null) {
-         if (client.level.getBlockEntity(payload.mPos) instanceof ProjectorBlockEntity entity1) {
-            entity1.mCFromID = payload.bl0;
-            entity1.mCLocation = payload.str0;
-            entity1.mCNextFromID = payload.bl1;
-            entity1.mCNextLocation = payload.str1;
-            return;
-         }
-
-         Slideshow.LOGGER.debug(Utilities.MARKER, "Received illegal packet for image info in {}.", payload.mPos);
+   // Applied by the client only; kept here because it needs no client-only types
+   public void applyTo(Level level) {
+      if (level == null) {
+         return;
+      } else if (level.getBlockEntity(this.mPos) instanceof ProjectorBlockEntity entity1) {
+         entity1.mCFromID = this.bl0;
+         entity1.mCLocation = this.str0;
+         entity1.mCNextFromID = this.bl1;
+         entity1.mCNextLocation = this.str1;
+         return;
       }
+
+      Slideshow.LOGGER.debug(Utilities.MARKER, "Received illegal packet for image info in {}.", this.mPos);
    }
 
    public @NotNull Type<ProjectorImageInfoS2CPayload> type() {

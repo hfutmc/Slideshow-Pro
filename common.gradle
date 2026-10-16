@@ -1,6 +1,14 @@
 final int mcVersion = project.mcVersion
 final boolean unobfuscated = mcVersion >= 26_00_00
 
+// Two flavours are built from the same tree. The regular Fabric build keeps the mod's own
+// unsigned-message argument type; the Velocity-compatible build (built with -Pvelocity=true)
+// swaps it for a vanilla argument type, because a Velocity proxy refuses to decode a command
+// tree containing an argument type it does not know. Only the flavour source directory differs.
+final boolean velocityBuild = (project.findProperty('velocity') ?: 'false').toString().toBoolean()
+final String buildVariant = velocityBuild ? 'velocity' : 'fabric'
+final String buildVersion = velocityBuild ? "${project.mod_version}-velocity" : project.mod_version
+
 apply plugin: 'maven-publish'
 apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
 apply plugin: 'com.replaymod.preprocess'
@@ -66,6 +74,15 @@ sourceSets.main.resources {
     srcDir "src/main/resources"
 }
 
+// The flavour sources live outside src/main, so the preprocessor never rewrites them on their
+// own. Only the core project adds them as a real source directory; every other version gets a
+// preprocessed copy of the core project sources, the same way as the rest of src/main. Adding
+// the directory to the other projects as well would compile the same class twice.
+final String coreProjectName = rootProject.file('versions/mainProject').text.trim()
+if (project.name == coreProjectName) {
+    sourceSets.main.java.srcDir rootProject.file("src/variant/${buildVariant}/java")
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     // options.compilerArgs += ["-Xlint:deprecation"]
@@ -73,14 +90,14 @@ tasks.withType(JavaCompile).configureEach {
 
 jar {
     archiveBaseName = "slideshow_pro"
-    archiveVersion = "fabric${project.name}-${project.mod_version}"
+    archiveVersion = "fabric${project.name}-${buildVersion}"
     archiveClassifier = ""
 }
 
 if (!unobfuscated) {
     remapJar {
         archiveBaseName = "slideshow_pro"
-        archiveVersion = "fabric${project.name}-${project.mod_version}"
+        archiveVersion = "fabric${project.name}-${buildVersion}"
         archiveClassifier = ""
     }
 }
@@ -100,13 +117,13 @@ afterEvaluate {
 
 processResources {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    inputs.property "version", project.mod_version
+    inputs.property "version", buildVersion
     inputs.property "minecraft_range", project.minecraft_range
     inputs.property "java_version", JAVA_COMPATIBILITY.toString()
     inputs.property "loader_version", project.loader_version
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.mod_version,
+        expand "version": buildVersion,
                "minecraft_range": project.minecraft_range,
                "java_version": JAVA_COMPATIBILITY.toString(),
                "loader_version": project.loader_version

@@ -20,14 +20,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.teacon.slides.config.Config;
-//#if MC >= 12105
-//$$ import org.teacon.slides.item.FlipperItem;
+//#if MC < 12105
+import org.teacon.slides.item.FlipperItem;
 //#endif
 import org.teacon.slides.network.ProjectorImageInfoS2CPayload;
 import org.teacon.slides.projector.ProjectorScreen;
 import org.teacon.slides.renderer.ProjectorRenderer;
 import org.teacon.slides.renderer.SlideState;
 import org.teacon.slides.texture.WebPDecoder;
+import org.teacon.slides.util.ClientUtilities;
 import org.teacon.slides.util.RegistryClient;
 
 public class SlideshowClient implements ClientModInitializer {
@@ -44,11 +45,14 @@ public class SlideshowClient implements ClientModInitializer {
 //#endif
       RegistryClient.registerTickEvent(SlideState::tick);
 //#if MC >= 12105
-      //$$ RegistryClient.registerTickEvent(minecraftClient -> FlipperItem.clientTick());
+      //$$ RegistryClient.registerTickEvent(minecraftClient -> ClientUtilities.clientTick());
+//#else
+      FlipperItem.clientInventoryTick = ClientUtilities::onInventoryTick;
 //#endif
       RegistryClient.registerClientStartedEvent(minecraftClient -> Config.refreshProperties());
       RegistryClient.registerClientStoppingEvent(SlideState::onPlayerLeft);
-      RegistryClient.registerNetworkReceiver(ProjectorImageInfoS2CPayload.ID, ProjectorImageInfoS2CPayload::handle);
+      RegistryClient.registerNetworkReceiver(ProjectorImageInfoS2CPayload.ID,
+         (payload, context) -> payload.applyTo(context.client().level));
       MenuScreens.register(Slideshow.PROJECTOR_SCREEN_HANDLER, ProjectorScreen::new);
 //#if MC >= 26_00_00
       //$$ ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloadListener(Identifier.fromNamespaceAndPath("slide_show", "client_reload"), new ResourceManagerReloadListener() {

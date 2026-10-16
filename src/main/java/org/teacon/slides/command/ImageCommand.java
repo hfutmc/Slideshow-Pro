@@ -36,9 +36,9 @@ public class ImageCommand {
             .then(
                Commands.literal("url")
                   .then(
-                     Commands.argument("url_string", UnsignedMessageArgumentType.message())
+                     Commands.argument("url_string", CommandCompat.urlArgument())
                         .executes(
-                           context -> executeExportUrl((CommandSourceStack)context.getSource(), UnsignedMessageArgumentType.getMessage(context, "url_string"))
+                           context -> executeExportUrl((CommandSourceStack)context.getSource(), CommandCompat.url(context))
                         )
                   )
             )

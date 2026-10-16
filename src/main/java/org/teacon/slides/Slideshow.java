@@ -3,7 +3,6 @@ package org.teacon.slides;
 import com.mojang.serialization.Codec;
 import java.util.List;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.ServerStarting;
@@ -29,7 +28,6 @@ import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 //#else
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 //#endif
-import net.minecraft.commands.synchronization.SingletonArgumentInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -56,10 +54,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType.Builder;
 //#endif
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.teacon.slides.command.CommandCompat;
 import org.teacon.slides.command.ImageCommand;
 import org.teacon.slides.command.ImageinfoCommand;
 import org.teacon.slides.command.ProjectorCommand;
-import org.teacon.slides.command.UnsignedMessageArgumentType;
 import org.teacon.slides.config.ServerConfig;
 import org.teacon.slides.item.FlipperItem;
 import org.teacon.slides.item.ImageItem;
@@ -176,11 +174,7 @@ public class Slideshow implements ModInitializer {
       RegistryServer.registerNetworkReceiver(ProjectorExportC2SPayload.ID, ProjectorExportC2SPayload::handle);
       RegistryServer.registerNetworkReceiver(FlipperFlipBackC2SPayload.ID, FlipperFlipBackC2SPayload::handle);
       RegistryServer.registerNetworkReceiver(ImageAfterUpdateC2SPayload.ID, ImageAfterUpdateC2SPayload::handle);
-      ArgumentTypeRegistry.registerArgumentType(
-         ResourceLocation.fromNamespaceAndPath("slide_show", "unsigned_message"),
-         UnsignedMessageArgumentType.class,
-         SingletonArgumentInfo.contextFree(UnsignedMessageArgumentType::message)
-      );
+      CommandCompat.registerArgumentType();
       CommandRegistrationCallback.EVENT.register((CommandRegistrationCallback)(dispatcher, registryAccess, environment) -> {
          ImageCommand.register(dispatcher);
          ProjectorCommand.register(dispatcher);

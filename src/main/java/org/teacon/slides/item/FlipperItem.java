@@ -2,11 +2,11 @@ package org.teacon.slides.item;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntConsumer;
 //#if MC >= 12105
 //$$ import java.util.function.Consumer;
 //#endif
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,7 +38,8 @@ import org.teacon.slides.util.RegistryClient;
 import org.teacon.slides.util.Utilities;
 
 public class FlipperItem extends Item {
-   private static boolean attackKeyDown = false;
+   // Injected by SlideshowClient, so that this shared class stays free of client-only types
+   public static IntConsumer clientInventoryTick = slot -> { };
 
    public FlipperItem(Properties properties) {
       super(properties);
@@ -160,30 +161,10 @@ public class FlipperItem extends Item {
 //#else
    public void inventoryTick(ItemStack stack, Level world, Entity entity, int slot, boolean selected) {
       super.inventoryTick(stack, world, entity, slot, selected);
-      if (world.isClientSide() && selected && attackKeyDown != Minecraft.getInstance().options.keyAttack.isDown()) {
-         attackKeyDown = !attackKeyDown;
-         if (attackKeyDown) {
-            sendServerFlipBack(slot);
-         }
+      if (world.isClientSide() && selected) {
+         clientInventoryTick.accept(slot);
       }
    }
-//#endif
-
-//#if MC >= 12105
-   //$$ public static void clientTick() {
-      //$$ Minecraft mc = Minecraft.getInstance();
-      //$$ if (mc.player != null) {
-         //$$ Player player = mc.player;
-         //$$ int slot = player.getInventory().getSelectedSlot();
-         //$$ ItemStack stack = player.getInventory().getItem(slot);
-         //$$ if (stack.is(Slideshow.FLIPPER_ITEM) && attackKeyDown != mc.options.keyAttack.isDown()) {
-            //$$ attackKeyDown = !attackKeyDown;
-            //$$ if (attackKeyDown) {
-               //$$ sendServerFlipBack(slot);
-            //$$ }
-         //$$ }
-      //$$ }
-   //$$ }
 //#endif
 
 //#if MC >= 12105
@@ -213,7 +194,7 @@ public class FlipperItem extends Item {
    }
 //#endif
 
-   private static void sendServerFlipBack(int i) {
+   public static void sendServerFlipBack(int i) {
       RegistryClient.sendToServer(new FlipperFlipBackC2SPayload(i));
    }
 

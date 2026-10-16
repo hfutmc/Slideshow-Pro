@@ -63,6 +63,8 @@ jobs:
           chmod +x gradlew
           echo "Building subproject ${{ matrix.subproject }}"
           ./gradlew :${{ matrix.subproject }}:build
+          echo "Building the Velocity-compatible flavour of subproject ${{ matrix.subproject }}"
+          ./gradlew :${{ matrix.subproject }}:build -Pvelocity=true
         env:
           BUILD_ID: ${{ github.run_number }}
           BUILD_RELEASE: ${{ inputs.release }}
@@ -75,7 +77,9 @@ jobs:
           echo eula=true > ./run/eula.txt
           ./gradlew runServerMixinAudit
 
-      - name: Collect mod jar
+      # Both flavours of the version end up here: the regular build plus the
+      # Velocity-compatible one carrying the `-velocity` suffix.
+      - name: Collect mod jars
         run: |
           shopt -s extglob
           mkdir mod-jars
@@ -86,7 +90,7 @@ jobs:
 
       # The artifact name is the subproject name (i.e. the Minecraft version),
       # so each version can be downloaded on its own.
-      - name: Upload mod jar
+      - name: Upload mod jars
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.subproject }}
