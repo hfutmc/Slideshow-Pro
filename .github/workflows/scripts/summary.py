@@ -51,7 +51,7 @@ def main():
 			# This project declares its supported Minecraft range in minecraft_range
 			game_versions = read_prop('versions/{}/gradle.properties'.format(subproject), 'minecraft_range')
 			game_versions = game_versions.strip().replace('\r', '').replace('\n', ', ')
-			file_paths = glob.glob('build-artifacts/{}/build/libs/*.jar'.format(subproject))
+			file_paths = glob.glob('mod-jars/{}/**/*.jar'.format(subproject), recursive=True)
 			file_paths = list(filter(lambda fp: not fp.endswith('-sources.jar') and not fp.endswith('-dev.jar') and not fp.endswith('-shadow.jar'), file_paths))
 			if len(file_paths) == 0:
 				file_name = '*not found*'

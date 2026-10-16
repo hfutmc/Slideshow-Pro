@@ -18,8 +18,21 @@ on:
         default: false
 
 jobs:
+  matrix_prep:
+    uses: ./.github/workflows/matrix_prep.yml
+    with:
+      target_subproject: ${{ inputs.target_subproject }}
+
+  # One job per Minecraft subproject, so every version produces its own artifact
+  # instead of being packed into a single one.
   build:
+    needs:
+      - matrix_prep
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v7
@@ -48,14 +61,8 @@ jobs:
       - name: Build with gradle
         run: |
           chmod +x gradlew
-          if [ -z "${{ inputs.target_subproject }}" ]; then
-              echo "Building all subprojects"
-              ./gradlew build
-          else
-              args=$(echo "${{ inputs.target_subproject }}" | tr ',' '\n' | sed 's/$/:build/' | paste -sd ' ')
-              echo "Building with arguments=$args"
-              ./gradlew $args
-          fi
+          echo "Building subproject ${{ matrix.subproject }}"
+          ./gradlew :${{ matrix.subproject }}:build
         env:
           BUILD_ID: ${{ github.run_number }}
           BUILD_RELEASE: ${{ inputs.release }}
@@ -67,45 +74,24 @@ jobs:
           mkdir -p ./run
           echo eula=true > ./run/eula.txt
           ./gradlew runServerMixinAudit
-      
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-artifacts
-          path: versions/*/build/libs/
 
-      - name: Collect mod jars
+      - name: Collect mod jar
         run: |
           shopt -s extglob
           mkdir mod-jars
-          for jar in versions/*/build/libs/!(*-@(dev|sources|shadow)).jar; do
+          for jar in versions/${{ matrix.subproject }}/build/libs/!(*-@(dev|sources|shadow)).jar; do
               cp -p "$jar" mod-jars/
           done
           ls -l mod-jars
 
-      # This is the artifact recommended for users to download
-      - name: Upload mod jars
+      # The artifact name is the subproject name (i.e. the Minecraft version),
+      # so each version can be downloaded on its own.
+      - name: Upload mod jar
         uses: actions/upload-artifact@v7
         with:
-          name: mod-jars
+          name: ${{ matrix.subproject }}
           path: mod-jars/*.jar
-
-#      # [FEATURE] FALLENS_MAVEN
-#      - name: Publish with gradle
-#        if: inputs.release || github.ref == 'refs/heads/dev'
-#        run: |
-#          if [ -z "${{ inputs.target_subproject }}" ]; then
-#              echo "Publishing all subprojects"
-#              ./gradlew publish
-#          else
-#              args=$(echo "${{ inputs.target_subproject }}" | tr ',' '\n' | sed 's/$/:publish/' | paste -sd ' ')
-#              echo "Publishing with arguments=$args"
-#              ./gradlew $args
-#          fi
-#        env:
-#          BUILD_ID: ${{ github.run_number }}
-#          BUILD_RELEASE: ${{ inputs.release }}
-#          FALLENS_MAVEN_TOKEN: ${{ secrets.FALLENS_MAVEN_TOKEN }}
+          if-no-files-found: error
 
   summary:
     runs-on: ubuntu-latest
@@ -118,11 +104,10 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Download build artifacts
+      - name: Download per-version artifacts
         uses: actions/download-artifact@v8
         with:
-          name: build-artifacts
-          path: build-artifacts
+          path: mod-jars
 
       - name: Make build summary
         run: |
