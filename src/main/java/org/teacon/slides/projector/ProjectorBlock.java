@@ -78,10 +78,10 @@ public final class ProjectorBlock extends BaseEntityBlock implements EntityBlock
    @NotNull
    public BlockState getStateForPlacement(BlockPlaceContext ctx) {
       Direction facing = ctx.getNearestLookingDirection().getOpposite();
-      Direction horizontalFacing = ctx.getNearestLookingVerticalDirection().getOpposite();
+      Direction horizontalFacing = ctx.getHorizontalDirection().getOpposite();
       Direction base = Arrays.stream(ctx.getNearestLookingDirections()).filter(Plane.VERTICAL).findFirst().orElse(Direction.DOWN);
-      ProjectorBlock.InternalRotation rotation = ProjectorBlock.InternalRotation.VALUES[4
-         + Math.floorMod(facing.getStepY() * horizontalFacing.get2DDataValue(), 4)];
+      ProjectorBlock.InternalRotation rotation = ProjectorBlock.InternalRotation.VALUES[
+         Math.floorMod(facing.getStepY() * horizontalFacing.get2DDataValue(), 4)];
       return (BlockState)((BlockState)((BlockState)((BlockState)this.defaultBlockState().setValue(BASE, base)).setValue(BlockStateProperties.FACING, facing))
             .setValue(BlockStateProperties.POWERED, Boolean.FALSE))
          .setValue(ROTATION, rotation);
