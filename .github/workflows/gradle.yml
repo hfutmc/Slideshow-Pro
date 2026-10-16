@@ -1,0 +1,21 @@
+name: Dev Builds
+
+on:
+  push:
+    paths:
+      - "*.gradle"
+      - "gradle.properties"
+      - "src/**"
+      - "versions/**"
+      - ".github/workflows"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      # This project has no mixins, and build.gradle does not define a
+      # runServerMixinAudit task, so the audit step must stay disabled.
+      mixin_audit: false
