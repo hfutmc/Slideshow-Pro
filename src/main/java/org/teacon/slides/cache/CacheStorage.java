@@ -69,8 +69,17 @@ final class CacheStorage implements HttpCacheStorage {
 
    private static Pair<Path, HttpCacheEntry> normalize(Path parentPath, HttpCacheEntry entry) throws IOException {
       byte[] bytes = IOUtils.toByteArray(entry.getResource().getInputStream());
-      Path tmp = Files.write(Files.createTempFile("slideshow-", ".tmp"), bytes);
-      Path path = Files.move(tmp, parentPath.resolve(allocateImageName(bytes)), StandardCopyOption.REPLACE_EXISTING);
+      Path path = parentPath.resolve(allocateImageName(bytes));
+      // The name is the content hash, so an existing file of the right size already holds these bytes.
+      if (!Files.exists(path) || Files.size(path) != bytes.length) {
+         // Keep the temp file on the cache filesystem, otherwise the move below cannot be atomic.
+         Path tmp = Files.write(Files.createTempFile(parentPath, "slideshow-", ".tmp"), bytes);
+         try {
+            Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE);
+         } catch (java.nio.file.AtomicMoveNotSupportedException | java.nio.file.FileAlreadyExistsException e) {
+            Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+         }
+      }
       return Pair.of(
          path,
          new HttpCacheEntry(
@@ -170,6 +179,7 @@ final class CacheStorage implements HttpCacheStorage {
    }
 
    private void save() {
+      int snapshotMark = this.markedDirty.get();
       JsonObject root = new JsonObject();
       synchronized (this.entries) {
          saveJson(this.entries, root);
@@ -181,6 +191,14 @@ final class CacheStorage implements HttpCacheStorage {
          } catch (Exception var10) {
             LOGGER.warn(MARKER, "Failed to save cache storage. ", var10);
          }
+      }
+
+      int changed = this.markedDirty.getAndSet(0);
+      LOGGER.debug(MARKER, "Attempted to save {} change(s) to cache storage. ", changed);
+      // Changes made after the snapshot above are missing from the file, and they did not schedule
+      // a save of their own because this one was still marked as pending. Save them again.
+      if (changed > snapshotMark) {
+         this.scheduleSave();
       }
    }
 
@@ -202,10 +220,7 @@ final class CacheStorage implements HttpCacheStorage {
    private void scheduleSave() {
       if (this.markedDirty.getAndIncrement() == 0) {
          Executor executor = CompletableFuture.delayedExecutor(5L, TimeUnit.SECONDS, Util.backgroundExecutor());
-         CompletableFuture.runAsync(this::save, executor).thenRun(() -> {
-            int changes = this.markedDirty.getAndSet(0);
-            LOGGER.debug(MARKER, "Attempted to save {} change(s) to cache storage. ", changes);
-         });
+         CompletableFuture.runAsync(this::save, executor);
       }
    }
 
