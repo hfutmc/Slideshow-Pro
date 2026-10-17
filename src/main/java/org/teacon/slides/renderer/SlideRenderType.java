@@ -65,17 +65,31 @@ import org.teacon.slides.Slideshow;
 //$$
 //$$ 	public SlideRenderType(GpuTexture texture, GpuSampler sampler) {
 //#if MC >= 26_00_00
-//$$ 		this.delegate = RenderType.create(Slideshow.ID, RenderSetup.builder(RenderPipelines.TRANSLUCENT_BLOCK)
+//$$ 		this.delegate = new BlendinglessRenderType(Slideshow.ID, RenderSetup.builder(RenderPipelines.TRANSLUCENT_BLOCK)
 //$$ 				.withTexture("Sampler0", registerTexture(texture, sampler))
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
 //$$ 	}
 //$$
 //$$ 	SlideRenderType(Identifier texture) {
-//$$ 		this.delegate = RenderType.create(ID_ICON, RenderSetup.builder(RenderPipelines.TRANSLUCENT_BLOCK)
+//$$ 		this.delegate = new BlendinglessRenderType(ID_ICON, RenderSetup.builder(RenderPipelines.TRANSLUCENT_BLOCK)
 //$$ 				.withTexture("Sampler0", texture)
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
+//$$ 	}
+//$$
+//$$ 	// Iris picks the pass for this geometry from hasBlending(); reporting no blending keeps the
+//$$ 	// slide out of the blended pass, which is what made it invisible under shader packs such as
+//$$ 	// Photon on 26.1.x. Upstream SlideShow applies the same fix.
+//$$ 	private static final class BlendinglessRenderType extends RenderType {
+//$$ 		private BlendinglessRenderType(String name, RenderSetup setup) {
+//$$ 			super(name, setup);
+//$$ 		}
+//$$
+//$$ 		@Override
+//$$ 		public boolean hasBlending() {
+//$$ 			return false;
+//$$ 		}
 //$$ 	}
 //#else
 //$$ 		this.delegate = RenderType.create(Slideshow.ID, RenderSetup.builder(RenderPipelines.TRANSLUCENT_MOVING_BLOCK)
