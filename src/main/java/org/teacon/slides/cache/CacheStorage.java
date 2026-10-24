@@ -276,11 +276,6 @@ final class CacheStorage implements HttpCacheStorage {
       synchronized (this.entries) {
          Pair<Path, HttpCacheEntry> pair = this.entries.get(url);
          this.entries.put(url, normalize(this.parentPath, cb.update(pair != null ? (HttpCacheEntry)pair.getValue() : null)));
-         HttpCacheEntry existing = (HttpCacheEntry)this.entries.get(url).getValue();
-         HttpCacheEntry updated = cb.update(existing);
-         if (existing != updated) {
-            this.keepResourceReference(updated);
-         }
       }
 
       this.scheduleSave();
