@@ -58,6 +58,7 @@ public final class AnimatedTextureProvider implements TextureProvider {
 
 	private long mFrameStartTime;
 	private long mFrameDelayTime;
+	private final boolean mSingleFrame;
 
 	public AnimatedTextureProvider(byte[] data) {
 //#if MC >= 12105
@@ -69,6 +70,7 @@ public final class AnimatedTextureProvider implements TextureProvider {
 //$$ 
 //$$ 			buffer = MemoryUtil.memAlloc(width * height * 4);
 //$$ 			mFrameDelayTime = mDecoder.decodeNextFrame(buffer);
+//$$ 			mSingleFrame = !mDecoder.hasNextFrame();
 //$$ 
 //#if MC >= 12108
 //$$ 			mTexture = RenderSystem.getDevice().createTexture("slide_show_animated",
@@ -134,6 +136,7 @@ public final class AnimatedTextureProvider implements TextureProvider {
 
 			buffer = MemoryUtil.memAlloc(width * height * 4);
 			mFrameDelayTime = mDecoder.decodeNextFrame(buffer);
+			mSingleFrame = !mDecoder.hasNextFrame();
 
 			mTexture = glGenTextures();
 			RenderSystem.bindTexture(mTexture);
@@ -169,6 +172,9 @@ public final class AnimatedTextureProvider implements TextureProvider {
 	@NotNull
 	@Override
 	public SlideRenderType updateAndGet(long tick, float partialTick) {
+		if (mSingleFrame) {
+			return mRenderType;
+		}
 		long timeMillis = (long) ((tick + partialTick) * 50);
 		if (mFrameStartTime == 0) {
 			mFrameStartTime = timeMillis;
@@ -223,7 +229,18 @@ public final class AnimatedTextureProvider implements TextureProvider {
 
 	@Override
 	public void close() {
-//#if MC >= 12105
+//#if MC >= 12111
+//$$ 		if (mRenderType != null) {
+//$$ 			// The render type owns the registration; releasing it closes the texture and its view.
+//$$ 			mRenderType.close();
+//$$ 		} else if (mTexture != null) {
+//$$ 			mTexture.close();
+//$$ 		}
+//$$ 		mTexture = null;
+//#elseif MC >= 12105
+//$$ 		if (mRenderType != null) {
+//$$ 			mRenderType.close(); // closes the texture view on 1.21.8+; no-op on 1.21.5
+//$$ 		}
 //$$ 		if (mTexture != null) {
 //$$ 			mTexture.close();
 //$$ 		}

@@ -18,10 +18,10 @@ public class GIFDecoder {
 
     private final int mScreenWidth;
     private final int mScreenHeight;
-    private final byte[][] mGlobalPalette;  // R G B A
-    private final byte[] mImage;
+    private final int[] mGlobalPalette;  // rgba0 rgba1 ...
+    private final int[] mImage;  // rgba0 rgba1 ...
 
-    private byte[][] mTmpPalette;
+    private int[] mTmpPalette;  // rgba0 rgba1 ...
     private final byte[] mTmpImage;
 
     private final int[] mTmpInterlace;
@@ -50,8 +50,8 @@ public class GIFDecoder {
         } else {
             mGlobalPalette = null;
         }
-        mImage = new byte[mScreenWidth * mScreenHeight * 4];
-        mTmpImage = new byte[mImage.length];
+        mImage = new int[mScreenWidth * mScreenHeight];
+        mTmpImage = new byte[mScreenWidth * mScreenHeight];
 
         mTmpInterlace = new int[mScreenHeight];
 
@@ -93,10 +93,13 @@ public class GIFDecoder {
         boolean isInterlaced = (packedField & 0x40) != 0;
 
         int paletteSize = 2 << (packedField & 7);
-        if (mTmpPalette == null || mTmpPalette[0].length < paletteSize) {
-            mTmpPalette = new byte[4][paletteSize];
+        if (mTmpPalette == null || mTmpPalette.length < paletteSize) {
+            mTmpPalette = new int[paletteSize];
         }
-        byte[][] palette = localPalette ? readPalette(paletteSize, transparentIndex, mTmpPalette) : mGlobalPalette;
+        int[] palette = localPalette ? readPalette(paletteSize, transparentIndex, mTmpPalette) : mGlobalPalette;
+        if (palette == null) {
+            throw new IOException();
+        }
 
         int delayTime = imageControlCode & 0xFFFF;
 
@@ -108,15 +111,17 @@ public class GIFDecoder {
         return delayTime != 0 ? delayTime * 10 : DEFAULT_DELAY_MILLIS;
     }
 
-    private byte[] @NotNull [] readPalette(int size, int transparentIndex, byte[][] palette) throws IOException {
+    private int @NotNull [] readPalette(int size, int transparentIndex, int[] palette) throws IOException {
+        // max size is 256, one packed rgba int per entry (little-endian: r | g<<8 | b<<16 | a<<24)
         if (palette == null) {
-            palette = new byte[4][size];
+            palette = new int[size];
         }
         for (int i = 0; i < size; ++i) {
-            for (int k = 0; k < 3; ++k) {
-                palette[k][i] = (byte) readByte();
-            }
-            palette[3][i] = (i == transparentIndex) ? 0 : (byte) 0xFF;
+            int r = readByte();
+            int g = readByte();
+            int b = readByte();
+            int a = (i == transparentIndex) ? 0 : 0xFF;
+            palette[i] = r | (g << 8) | (b << 16) | (a << 24);
         }
         return palette;
     }
@@ -126,6 +131,35 @@ public class GIFDecoder {
              blockSize != 0;
              blockSize = readByte()) {
             skipBytes(blockSize);
+        }
+    }
+
+    /**
+     * Peeks ahead whether another image separator follows the frame that was just decoded,
+     * without consuming input. Single-frame GIFs use this to skip per-tick re-decoding.
+     */
+    public boolean hasNextFrame() {
+        int pos = mPos;
+        try {
+            for (; ; ) {
+                int ch = read();
+                switch (ch) {
+                    case 0x2C:  // Image Separator
+                        return true;
+                    case 0x21:  // Extension Introducer
+                        readByte();
+                        skipExtension();
+                        break;
+                    case -1:    // EOF
+                    case 0x3B:  // Trailer
+                    default:
+                        return false;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        } finally {
+            mPos = pos;
         }
     }
 
@@ -208,75 +242,62 @@ public class GIFDecoder {
         return data;
     }
 
-    private void restoreToBackground(byte[] image, int left, int top, int width, int height) {
+    // GIF specification states that restore to background should fill the frame
+    // with background color, but actually all modern programs fill with transparent color.
+    private void restoreToBackground(int[] image, int left, int top, int width, int height) {
         for (int y = 0; y < height; ++y) {
-            int iPos = ((top + y) * mScreenWidth + left) * 4;
-            for (int x = 0; x < width; iPos += 4, ++x) {
-                image[iPos + 3] = 0;
+            int iPos = (top + y) * mScreenWidth + left;
+            for (int x = 0; x < width; iPos++, ++x) {
+                image[iPos] &= 0xFFFFFF;
             }
         }
     }
 
-    private void decodePalette(byte[] srcImage, byte[][] palette, int transparentIndex,
+    private void decodePalette(byte[] srcImage, int[] palette, int transparentIndex,
                                int left, int top, int width, int height, int disposalCode,
                                ByteBuffer pixels) {
+        // Restore to previous
         if (disposalCode == 3) {
-            pixels.put(mImage);
+            pixels.asIntBuffer().put(mImage);
             for (int y = 0; y < height; ++y) {
                 int iPos = ((top + y) * mScreenWidth + left) * 4;
                 int i = y * width;
                 if (transparentIndex < 0) {
                     for (int x = 0; x < width; ++x) {
-                        int index = 0xFF & srcImage[i + x];
-                        pixels.put(iPos++, palette[0][index]);
-                        pixels.put(iPos++, palette[1][index]);
-                        pixels.put(iPos++, palette[2][index]);
-                        pixels.put(iPos++, palette[3][index]);
+                        pixels.putInt(iPos, palette[0xFF & srcImage[i + x]]);
+                        iPos += 4;
                     }
                 } else {
                     for (int x = 0; x < width; ++x) {
                         int index = 0xFF & srcImage[i + x];
                         if (index != transparentIndex) {
-                            pixels.put(iPos++, palette[0][index]);
-                            pixels.put(iPos++, palette[1][index]);
-                            pixels.put(iPos++, palette[2][index]);
-                            pixels.put(iPos++, palette[3][index]);
-                        } else {
-                            iPos += 4;
+                            pixels.putInt(iPos, palette[index]);
                         }
+                        iPos += 4;
                     }
                 }
             }
-            pixels.rewind();
         } else {
-            final byte[] image = mImage;
+            final int[] image = mImage;
             for (int y = 0; y < height; ++y) {
-                int iPos = ((top + y) * mScreenWidth + left) * 4;
+                int iPos = (top + y) * mScreenWidth + left;
                 int i = y * width;
                 if (transparentIndex < 0) {
                     for (int x = 0; x < width; ++x) {
-                        int index = 0xFF & srcImage[i + x];
-                        image[iPos++] = palette[0][index];
-                        image[iPos++] = palette[1][index];
-                        image[iPos++] = palette[2][index];
-                        image[iPos++] = palette[3][index];
+                        image[iPos++] = palette[0xFF & srcImage[i + x]];
                     }
                 } else {
                     for (int x = 0; x < width; ++x) {
                         int index = 0xFF & srcImage[i + x];
                         if (index != transparentIndex) {
-                            image[iPos++] = palette[0][index];
-                            image[iPos++] = palette[1][index];
-                            image[iPos++] = palette[2][index];
-                            image[iPos++] = palette[3][index];
-                        } else {
-                            iPos += 4;
+                            image[iPos] = palette[index];
                         }
+                        iPos++;
                     }
                 }
             }
 
-            pixels.put(image).rewind();
+            pixels.asIntBuffer().put(image);
             if (disposalCode == 2) {
                 restoreToBackground(mImage, left, top, width, height);
             }

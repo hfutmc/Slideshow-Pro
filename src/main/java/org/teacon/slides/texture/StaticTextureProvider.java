@@ -187,7 +187,18 @@ public final class StaticTextureProvider implements TextureProvider {
 
 	@Override
 	public void close() {
-//#if MC >= 12105
+//#if MC >= 12111
+//$$ 		if (mRenderType != null) {
+//$$ 			// The render type owns the registration; releasing it closes the texture and its view.
+//$$ 			mRenderType.close();
+//$$ 		} else if (mTexture != null) {
+//$$ 			mTexture.close();
+//$$ 		}
+//$$ 		mTexture = null;
+//#elseif MC >= 12105
+//$$ 		if (mRenderType != null) {
+//$$ 			mRenderType.close(); // closes the texture view on 1.21.8+; no-op on 1.21.5
+//$$ 		}
 //$$ 		if (mTexture != null) {
 //$$ 			mTexture.close();
 //$$ 		}

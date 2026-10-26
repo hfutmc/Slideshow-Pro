@@ -62,13 +62,16 @@ import org.teacon.slides.Slideshow;
 //$$ 	private static final String ID_ICON = Slideshow.ID + "icon";
 //$$
 //$$ 	private final RenderType delegate;
+//$$ 	private final Identifier mRegisteredTexture;
 //$$
 //$$ 	public SlideRenderType(GpuTexture texture, GpuSampler sampler) {
 //#if MC >= 26_00_00
+//$$ 		Identifier registered = registerTexture(texture, sampler);
 //$$ 		this.delegate = new BlendinglessRenderType(Slideshow.ID, RenderSetup.builder(RenderPipelines.TRANSLUCENT_BLOCK)
-//$$ 				.withTexture("Sampler0", registerTexture(texture, sampler))
+//$$ 				.withTexture("Sampler0", registered)
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
+//$$ 		this.mRegisteredTexture = registered;
 //$$ 	}
 //$$
 //$$ 	SlideRenderType(Identifier texture) {
@@ -76,6 +79,7 @@ import org.teacon.slides.Slideshow;
 //$$ 				.withTexture("Sampler0", texture)
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
+//$$ 		this.mRegisteredTexture = null;
 //$$ 	}
 //$$
 //$$ 	// Iris picks the pass for this geometry from hasBlending(); reporting no blending keeps the
@@ -92,10 +96,12 @@ import org.teacon.slides.Slideshow;
 //$$ 		}
 //$$ 	}
 //#else
+//$$ 		Identifier registered = registerTexture(texture, sampler);
 //$$ 		this.delegate = RenderType.create(Slideshow.ID, RenderSetup.builder(RenderPipelines.TRANSLUCENT_MOVING_BLOCK)
-//$$ 				.withTexture("Sampler0", registerTexture(texture, sampler))
+//$$ 				.withTexture("Sampler0", registered)
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
+//$$ 		this.mRegisteredTexture = registered;
 //$$ 	}
 //$$
 //$$ 	SlideRenderType(Identifier texture) {
@@ -103,11 +109,20 @@ import org.teacon.slides.Slideshow;
 //$$ 				.withTexture("Sampler0", texture)
 //$$ 				.useLightmap()
 //$$ 				.createRenderSetup());
+//$$ 		this.mRegisteredTexture = null;
 //$$ 	}
 //#endif
 //$$
 //$$ 	public RenderType asRenderType() {
 //$$ 		return this.delegate;
+//$$ 	}
+//$$
+//$$ 	public void close() {
+//$$ 		// Releasing the registration closes the SlideAbstractTexture, which in turn
+//$$ 		// closes both the GpuTexture and its view.
+//$$ 		if (this.mRegisteredTexture != null) {
+//$$ 			Minecraft.getInstance().getTextureManager().release(this.mRegisteredTexture);
+//$$ 		}
 //$$ 	}
 //$$
 //$$ 	private static Identifier registerTexture(GpuTexture texture, GpuSampler sampler) {
@@ -222,6 +237,10 @@ import org.teacon.slides.Slideshow;
 //$$ 		return this.pipeline;
 //$$ 	}
 //#endif
+//$$
+//$$ 	public void close() {
+//$$ 		this.textureView.close();
+//$$ 	}
 //$$ }
 //#elseif MC >= 12105
 //$$ public class SlideRenderType extends RenderType {
@@ -301,7 +320,10 @@ import org.teacon.slides.Slideshow;
 //$$ 
 //$$ 	@Override
 //$$ 	public VertexFormat.Mode mode() {
-//$$ 		return pipeline.getVertexFormatMode();
+//$$ 		return this.pipeline.getVertexFormatMode();
+//$$ 	}
+//$$
+//$$ 	public void close() {
 //$$ 	}
 //$$ }
 //#else
@@ -363,6 +385,9 @@ public class SlideRenderType extends RenderType.CompositeRenderType {
 			baseAction.run();
 			RenderSystem.setShaderTexture(0, texture);
 		};
+	}
+
+	public void close() {
 	}
 }
 //#endif
